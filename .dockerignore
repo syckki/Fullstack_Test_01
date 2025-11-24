@@ -1,0 +1,63 @@
+# Node modules (se instalan en el Dockerfile)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de desarrollo
+.env
+.env.local
+.env.*.local
+*.log
+
+# Build outputs (se generan en el Dockerfile)
+dist/
+.vite/
+.cache/
+
+# Git
+.git/
+.gitignore
+.github/
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+e2e/
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+docs/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Misc
+.editorconfig
+.prettierrc
+.eslintrc*
+drizzle.config.ts
+
+# project
+frontend/.env
+frontend/.env.*
+backend/.env
+backend/.env.*
+seed/
+shared/

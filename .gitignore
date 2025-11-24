@@ -48,6 +48,8 @@ coverage/
 # Testing
 .jest/
 *.test.js.snap
+playwright-report/
+test-results/
 
 # Database
 *.sqlite
@@ -69,3 +71,12 @@ Thumbs.db
 
 # Internal evaluation guides (uncomment to hide from candidates)
 # .internal/
+
+# Yarn Plug’n’Play (PnP)
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

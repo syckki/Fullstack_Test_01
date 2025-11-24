@@ -1,0 +1,23 @@
+{
+  "include": ["frontend/src/**/*", "shared/**/*", "backend/**/*", "backend/middleware", "backend/app.ts", "backend/db.ts", "backend/index-dev.ts", "backend/index-prod.ts", "backend/routes.ts", "backend/storage.ts"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+    "noEmit": true,
+    "module": "ESNext",
+    "strict": true,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["frontend/src/*"],
+      "@shared/*": ["./shared/*"]
+    }
+  }
+}
