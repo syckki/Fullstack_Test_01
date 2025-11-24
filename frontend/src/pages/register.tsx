@@ -187,7 +187,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  // disabled={registerMutation.isPending}
+                  disabled={registerMutation.isPending}
                   data-testid="button-submit"
                 >
                   {registerMutation.isPending ? (

@@ -292,7 +292,7 @@ app.post('/api/tasks', async (req, res) => {
 
 #### ✅ Rate Limiting: Nginx (API Gateway)
 
-**Decisión**: Implementado en `nginx-with-security.conf`, NO en Express.
+**Decisión**: Implementado en `nginx.conf`, NO en Express.
 
 **Razón**: Nginx es primera línea de defensa, más eficiente que Node.js.
 
@@ -303,7 +303,7 @@ app.post('/api/tasks', async (req, res) => {
 
 #### ✅ Content Security Policy (CSP): Nginx
 
-**Decisión**: Implementado en `nginx-with-security.conf`.
+**Decisión**: Implementado en `nginx.conf`.
 
 **Razón**: Nginx sirve frontend HTML, puede inyectar headers.
 
@@ -331,7 +331,7 @@ add_header Content-Security-Policy "
    - `X-Frame-Options: DENY`
    - `X-DNS-Prefetch-Control: off`
 
-2. **Nginx** (`nginx-with-security.conf`): Headers para frontend HTML
+2. **Nginx** (`nginx.conf`): Headers para frontend HTML
    - CSP completo
    - `X-Frame-Options: SAMEORIGIN`
    - `Permissions-Policy`
@@ -339,7 +339,7 @@ add_header Content-Security-Policy "
 
 ### Archivos de Seguridad
 
-- ✅ `nginx-with-security.conf`: Rate limiting + CSP + headers completos
+- ✅ `nginx.conf`: Rate limiting + CSP + headers completos
 - ✅ `backend/middleware/security.ts`: Security headers básicos + CORS opcional
 - ✅ `docs/SECURITY-ARCHITECTURE.md`: Guía completa con diagramas
 
@@ -708,7 +708,7 @@ FROM node:22.21.1-alpine AS production
 
 ### Documentación Docker Creada
 
-- ✅ `docs/DOCKER.md`: Guía completa (monolítica + 3 capas)
+- ✅ `docs/DOCKER.md`: Guía completa
 - ✅ `docs/DOCKER-ARCHITECTURE.md`: Diagramas, comparación, decisiones
 - ✅ `docker-compose.yml`: Arquitectura 3 capas (production-ready)
 
@@ -1164,4 +1164,4 @@ _Vista vertical con controles inline, mismos filtros que desktop_
 
 ---
 
-**Fecha de última actualización**: 23/11/2024
+**Fecha de última actualización**: 24/11/2025

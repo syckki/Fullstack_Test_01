@@ -1,4 +1,4 @@
-# Node modules (se instalan en el Dockerfile)
+# Node modules (installed in Dockerfile)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -10,7 +10,7 @@ yarn-error.log*
 .env.*.local
 *.log
 
-# Build outputs (se generan en el Dockerfile)
+# Build outputs (generated in Dockerfile)
 dist/
 .vite/
 .cache/

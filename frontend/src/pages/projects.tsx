@@ -234,15 +234,6 @@ function ProjectCard({ project }: { project: ProjectWithCreator }) {
     },
   });
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <>
       <Card className="hover-elevate" data-testid={`card-project-${project.id}`}>

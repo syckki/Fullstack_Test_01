@@ -56,7 +56,7 @@ function MainLayout() {
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/stats" element={<StatsPage />} />
-              <Route element={<NotFound />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </div>

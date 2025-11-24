@@ -76,7 +76,7 @@ Cliente → [:80] frontend (Nginx)
                                     ↓
                               MySQL protocol
                                     ↓
-                                postgres
+                                  mysql
 ```
 
 ---
@@ -121,8 +121,8 @@ Cliente → [:80] frontend (Nginx)
             │            │            │
             └────────────┼────────────┘
                          ▼
-                    postgres
-              (con replicación)
+                       mysql
+                  (con replicación)
 ```
 
 **Comando Docker Compose para escalar:**
@@ -134,12 +134,6 @@ docker-compose -f docker-compose.yml up -d --scale frontend=3 --scale backend=3
 
 ## 🔒 Redes y Seguridad
 
-### Monolítica
-- **1 red**: `taskflow-network`
-- Todo se comunica en la misma red
-- Postgres expuesto en :5432 (opcional)
-
-### 3 Capas
 - **2 redes aisladas**:
   - `frontend-network`: Nginx ↔ Backend
   - `backend-network`: Backend ↔ MySQL

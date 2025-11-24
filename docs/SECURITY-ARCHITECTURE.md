@@ -24,8 +24,8 @@ TaskFlow implementa una arquitectura de seguridad en **capas defensivas** donde:
 
 | Característica | Ubicación | Razón |
 |----------------|-----------|-------|
-| **Security Headers (API)** | `server/middleware/security.ts` | Headers específicos para respuestas JSON |
-| **CORS** | `server/middleware/security.ts` | Solo si necesitas servir a clientes en otros dominios |
+| **Security Headers (API)** | `backend/middleware/security.ts` | Headers específicos para respuestas JSON |
+| **CORS** | `backend/middleware/security.ts` | Solo si necesitas servir a clientes en otros dominios |
 
 ---
 
@@ -42,7 +42,7 @@ TaskFlow implementa una arquitectura de seguridad en **capas defensivas** donde:
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    NGINX (Puerto 80)                        │
-│                   🛡️ API GATEWAY 🛡️                         │
+│                   🛡️ API GATEWAY 🛡️                        │
 ├─────────────────────────────────────────────────────────────┤
 │ ✅ Rate Limiting            (10 req/s general)              │
 │ ✅ Rate Limiting Auth       (5 req/min login)               │
@@ -53,7 +53,7 @@ TaskFlow implementa una arquitectura de seguridad en **capas defensivas** donde:
 │ ✅ Static File Caching                                      │
 ├─────────────────────────────────────────────────────────────┤
 │ DECISIÓN DE ROUTING:                                        │
-│   /api/*     → Proxy a Backend (con rate limiting)         │
+│   /api/*     → Proxy a Backend (con rate limiting)          │
 │   /          → Servir frontend estático                     │
 │   /health    → Health check directo                         │
 └──────────────────────┬──────────────────────────────────────┘
@@ -72,18 +72,18 @@ TaskFlow implementa una arquitectura de seguridad en **capas defensivas** donde:
 │ ✅ Password Hashing (bcrypt)                                │
 ├─────────────────────────────────────────────────────────────┤
 │ RUTAS API:                                                  │
-│   POST /api/auth/login     → Autenticación                 │
-│   POST /api/auth/register  → Registro                      │
-│   GET  /api/projects       → CRUD Proyectos                │
-│   GET  /api/tasks          → CRUD Tareas                   │
+│   POST /api/auth/login     → Autenticación                  │
+│   POST /api/auth/register  → Registro                       │
+│   GET  /api/projects       → CRUD Proyectos                 │
+│   GET  /api/tasks          → CRUD Tareas                    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        │ Database queries
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    POSTGRESQL                               │
-│                   (Puerto 5432)                             │
+│                       MySQL                                 │
+│                   (Puerto 3306)                             │
 ├─────────────────────────────────────────────────────────────┤
 │ ✅ Password hashing (bcrypt)                                │
 │ ✅ Prepared statements (SQL injection prevention)           │
@@ -176,7 +176,7 @@ add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
 #### Security Headers para API
 
 ```typescript
-// server/middleware/security.ts
+// backend/middleware/security.ts
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -215,13 +215,7 @@ app.use(cors({
 
 ### ❌ NO necesitas CORS si:
 
-1. **Arquitectura Monolítica**
-   ```
-   Cliente → localhost:5000 (Frontend + Backend)
-   ```
-   → Mismo origen, no hay cross-origin
-
-2. **Arquitectura 3 Capas con Nginx Proxy**
+**Arquitectura 3 Capas con Nginx Proxy**
    ```
    Cliente → localhost:80/app (Nginx) → localhost:3000 (Backend)
    ```
@@ -270,7 +264,7 @@ services:
   frontend:
     image: nginx:alpine
     volumes:
-      - ./nginx-with-security.conf:/etc/nginx/nginx.conf  # ← Usar versión con seguridad
+      - ./nginx.conf:/etc/nginx/nginx.conf  # ← Usar versión con seguridad
     ports:
       - "80:80"
   
@@ -308,10 +302,10 @@ npm run dev
 
 ```bash
 # Ya implementado por defecto
-# server/middleware/security.ts está listo
+# backend/middleware/security.ts está listo
 ```
 
-En `server/app.ts`:
+En `backend/app.ts`:
 ```typescript
 import { setupSecurity } from "./middleware/security";
 
@@ -321,10 +315,8 @@ setupSecurity(app);  // ← Headers básicos
 
 ### Opción 2: Full Security con Nginx (Recomendado)
 
-1. **Reemplazar nginx.conf**:
-```bash
-cp nginx-with-security.conf nginx.conf
-```
+1. **Con nginx.conf**:
+
 
 2. **Rebuilder frontend**:
 ```bash
@@ -442,14 +434,13 @@ Database
 
 ### Archivos Disponibles
 
-- `nginx-with-security.conf` → Nginx con rate limiting y CSP
-- `nginx.conf` → Nginx básico (actual)
-- `server/middleware/security.ts` → Security headers + CORS opcional
+- `nginx.conf` → Nginx con rate limiting y CSP
+- `backend/middleware/security.ts` → Security headers + CORS opcional
 
 ### Siguiente Paso
 
 Si quieres seguridad completa:
 ```bash
-cp nginx-with-security.conf nginx.conf
+# with nginx.conf
 docker-compose -f docker-compose.yml up -d --build
 ```

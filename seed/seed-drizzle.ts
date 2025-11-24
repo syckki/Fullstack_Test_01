@@ -2,7 +2,7 @@
  * Seed de base de datos usando Drizzle ORM
  * 
  * VENTAJAS:
- * - ✅ Agnóstico de BD (funciona con MySQL, MySQL, SQLite)
+ * - ✅ Agnóstico de BD (funciona con MySQL, PostgreSQL, SQLite)
  * - ✅ Type-safe (TypeScript valida los datos)
  * - ✅ Usa las mismas tablas de shared/schema.ts
  * - ✅ No requiere SQL específico de cada motor
@@ -359,7 +359,7 @@ async function seedDrizzle() {
 
     console.log('\n🎉 Base de datos lista para usar!\n');
     console.log('💡 Credenciales de acceso:');
-    console.log('   Email: maria@taskflow.com');
+    console.log('   Email: jhonny@taskflow.com');
     console.log('   Password: password123\n');
 
     process.exit(0);

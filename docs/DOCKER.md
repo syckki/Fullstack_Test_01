@@ -22,7 +22,7 @@ docker-compose --version
 cp .env.docker.example .env
 
 # Editar .env y cambiar los secretos
-# IMPORTANTE: Cambia POSTGRES_PASSWORD y SESSION_SECRET
+# IMPORTANTE: Cambia los valores de los secretos
 ```
 
 ### 2. Ejecutar en Producción
@@ -84,7 +84,7 @@ docker-compose logs -f
 docker-compose logs -f app
 
 # Ver logs solo de MySQL
-docker-compose logs -f postgres
+docker-compose logs -f mysql
 ```
 
 ### Ejecutar Comandos en Contenedores
@@ -144,7 +144,7 @@ openssl rand -base64 48
 
 3. **Usar secrets de Docker** (Opcional):
 ```bash
-echo "mi_password_seguro" | docker secret create postgres_password -
+echo "mi_password_seguro" | docker secret create mysql_password -
 ```
 
 ## 🌐 Despliegue en Producción
@@ -209,21 +209,21 @@ docker-compose up -d
 ### Error de conexión a base de datos
 
 ```bash
-# Verificar que postgres esté corriendo
-docker-compose ps postgres
+# Verificar que mysql esté corriendo
+docker-compose ps mysql
 
 # Probar conexión manual
 docker-compose exec app sh
 # Dentro del contenedor:
-nc -zv postgres 5432
+nc -zv mysql 3306
 ```
 
-### Puerto 5000 ya en uso
+### Puerto 3000 ya en uso
 
 ```bash
 # Cambiar puerto en docker-compose.yml
 ports:
-  - "8080:5000"  # Exponer en 8080 en vez de 5000
+  - "5000:3000"  # Exponer en 5000 en vez de 3000
 ```
 
 ### Base de datos vacía después de reiniciar

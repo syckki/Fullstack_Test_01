@@ -7,7 +7,7 @@ dotenv.config({
 });
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+  throw new Error("DATABASE_URL is missing. Ensure the database is provisioned and the environment variable is set.");
 }
 
 export default defineConfig({

@@ -234,7 +234,7 @@ TaskFlow incluye configuración completa de Docker para ejecutar la aplicación 
 ```bash
 # 1. Configurar variables de entorno
 cp .env.docker.example .env
-# Edita .env y cambia POSTGRES_PASSWORD y SESSION_SECRET
+# Edita .env y cambia los valores
 
 # 2. Levantar todos los servicios
 docker-compose up -d
@@ -249,7 +249,7 @@ docker-compose exec app tsx scripts/seed-drizzle.ts
 
 **Servicios incluidos:**
 - 🚀 **app**: Frontend + Backend (Node.js 20, Express, React)
-- 🗄️ **postgres**: MySQL 16 con persistencia de datos
+- 🗄️ **postgres**: MySQL 8 con persistencia de datos
 
 **Documentación completa**:
 - 📘 [`docs/DOCKER.md`](docs/DOCKER.md) - Guía completa de Docker

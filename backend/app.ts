@@ -56,9 +56,9 @@ app.use((req, res, next) => {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
-      // if (logLine.length > 80) {
-      //   logLine = logLine.slice(0, 79) + "…";
-      // }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
 
       log(logLine);
     }
@@ -72,12 +72,24 @@ export default async function runApp(
 ) {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Log the full error server-side for debugging (includes route context)
+    log(`Error ${status} ${req.method} ${req.path}: ${message}`, "express");
+    console.error(err);
+
+    // Only send response if headers haven't been sent already
+    // Note: This is the final error handler, so we don't call next(err)
+    // because there's no other handler after this one
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
+    
+    // DO NOT rethrow - it would crash the Node.js process
+    // DO NOT call next(err) - this is the final handler, no one else to delegate to
+    // The error has been logged and the response sent (or skipped if headers sent)
   });
 
   // importantly run the final setup after setting up all the other routes so
