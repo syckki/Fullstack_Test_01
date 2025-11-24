@@ -115,12 +115,12 @@ function TaskFormDialog({
     enabled: !!selectedProjectId,
   });
 
-  // Clear assignedToId when project changes
+  // Clear assignedToId when project changes (both create and edit modes)
   React.useEffect(() => {
-    if (isEdit && selectedProjectId && selectedProjectId !== task?.projectId) {
+    if (selectedProjectId && selectedProjectId !== task?.projectId) {
       form.setValue("assignedToId", null, { shouldDirty: true });
     }
-  }, [selectedProjectId, isEdit, task?.projectId, form]);
+  }, [selectedProjectId, task?.projectId, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: TaskForm) => {
@@ -138,7 +138,6 @@ function TaskFormDialog({
           (payload as any)[key] = value;
         });
 
-        
         return apiRequest("PATCH", `/api/tasks/${task.id}`, payload);
       }
       // For create, set default status

@@ -115,7 +115,7 @@ Desarrollarás una **plataforma de gestión de proyectos y tareas colaborativa**
 ## 🏗️ Arquitectura
 
 ### Backend (Patrón Repository)
-El backend está construido con una arquitectura desacoplada usando el **Patrón Repository**, lo que permite cambiar fácilmente entre diferentes bases de datos (MySQL, MongoDB, MySQL) sin modificar la lógica de negocio.
+El backend está construido con una arquitectura desacoplada usando el **Patrón Repository**, lo que permite cambiar fácilmente entre diferentes bases de datos (MySQL, PostgreSQL, MongoDB) sin modificar la lógica de negocio.
 
 ```
 backend/

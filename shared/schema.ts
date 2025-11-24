@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { mysqlTable as table, text, varchar, timestamp, mysqlEnum as defEnum } from "drizzle-orm/mysql-core";
+import { mysqlTable as table, text, varchar, timestamp, mysqlEnum as defEnum, unique } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -40,7 +40,9 @@ export const projectCollaborators = table("project_collaborators", {
   projectId: varchar("project_id", { length: 36 }).notNull().references(() => projects.id, { onDelete: "cascade" }),
   userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
   addedAt: timestamp("added_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  uniqueProjectUser: unique("unique_project_user").on(table.projectId, table.userId),
+}));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

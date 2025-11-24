@@ -47,14 +47,14 @@ export interface IStorage {
   getTaskHeader(id: string): Promise<Task | undefined>;
   getTask(id: string): Promise<TaskWithDetails | undefined>;
   getTasks(filters?: {
-    status?: string;
-    priority?: string;
+    status?: "pending" | "in_progress" | "done";
+    priority?: "low" | "medium" | "high";
     projectId?: string;
     assignedToId?: string;
   }): Promise<TaskWithDetails[]>;
   getTasksForUser(userId: string, filters?: {
-    status?: string;
-    priority?: string;
+    status?: "pending" | "in_progress" | "done";
+    priority?: "low" | "medium" | "high";
     projectId?: string;
     assignedToId?: string;
   }): Promise<TaskWithDetails[]>;
