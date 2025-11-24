@@ -233,9 +233,9 @@ ports:
 docker volume ls | grep taskflow
 
 # Si se eliminó, recrearlo
-docker-compose up -d postgres
-docker-compose exec app npm run db:push
-docker-compose exec app tsx scripts/seed-drizzle.ts
+docker-compose up -d mysql
+yarn db:push
+yarn db:generate
 ```
 
 ## 📦 Optimización de Imagen

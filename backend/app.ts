@@ -52,7 +52,11 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      
+      // Security: Never log response bodies for auth routes (contains JWTs, passwords, PII)
+      const isSensitiveRoute = path.startsWith("/api/auth");
+      
+      if (capturedJsonResponse && !isSensitiveRoute) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 

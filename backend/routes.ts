@@ -546,7 +546,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           assignedToId: req.query.assignedToId as string | undefined,
         };
 
-        const tasks = await storage.getTasks(filters);
+        // ✅ Security Fix: Only return tasks from projects user has access to
+        const tasks = await storage.getTasksForUser(req.userId!, filters);
         res.json(tasks);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -653,11 +654,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "Task not found" });
         }
 
-        const updateData = { ...req.body };
-        
-        // Convert "null" string or empty string to null
-        if (updateData.assignedToId === "null" || updateData.assignedToId === "") {
-          updateData.assignedToId = null;
+        // ✅ Permission Check: Determine user role
+        const isCreatorOrCollab = await storage.isCreatorOrCollaborator(task.projectId, req.userId!);
+        const isAssignedUser = task.assignedToId === req.userId;
+
+        // User must be creator/collaborator OR assigned to the task
+        if (!isCreatorOrCollab && !isAssignedUser) {
+          return res.status(403).json({ error: "Access denied. You don't have permission to modify this task." });
+        }
+
+        let updateData = { ...req.body };
+
+        // ✅ Permission Enforcement: Assigned users (non-creators/collaborators) can only modify status and unassign themselves
+        if (!isCreatorOrCollab && isAssignedUser) {
+          const allowedFields: any = {};
+          
+          // Allow status changes
+          if (updateData.status !== undefined) {
+            allowedFields.status = updateData.status;
+          }
+          
+          // Allow unassigning themselves (assignedToId → null) or keeping themselves assigned
+          if (updateData.assignedToId !== undefined) {
+            const normalizedAssignedTo = updateData.assignedToId === "null" || updateData.assignedToId === "" 
+              ? null 
+              : updateData.assignedToId;
+            
+            // Allow setting to null (unassign) OR keeping themselves assigned
+            if (normalizedAssignedTo === null || normalizedAssignedTo === req.userId) {
+              allowedFields.assignedToId = normalizedAssignedTo;
+            } else {
+              return res.status(403).json({ error: "Assigned users can only unassign themselves or keep their assignment, not reassign to others." });
+            }
+          }
+          
+          // Reject attempts to modify restricted fields
+          const restrictedFields = ["title", "description", "priority", "projectId"];
+          const attemptedRestrictedChanges = restrictedFields.filter(field => updateData[field] !== undefined);
+          if (attemptedRestrictedChanges.length > 0) {
+            return res.status(403).json({ 
+              error: `Assigned users cannot modify: ${attemptedRestrictedChanges.join(", ")}. Only status and self-unassignment are allowed.` 
+            });
+          }
+          
+          updateData = allowedFields;
+        } else {
+          // Creator/Collaborator: Full permissions
+          // Convert "null" string or empty string to null
+          if (updateData.assignedToId === "null" || updateData.assignedToId === "") {
+            updateData.assignedToId = null;
+          }
         }
 
         // Determine which projectId to validate against
@@ -730,6 +776,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const task = await storage.getTask(req.params.id);
         if (!task) {
           return res.status(404).json({ error: "Task not found" });
+        }
+
+        // ✅ Security Fix: Verify user has access to the project
+        const hasAccess = await storage.hasProjectAccess(task.projectId, req.userId!);
+        if (!hasAccess) {
+          return res.status(403).json({ error: "Access denied. You don't have permission to delete this task." });
         }
 
         await storage.deleteTask(req.params.id);

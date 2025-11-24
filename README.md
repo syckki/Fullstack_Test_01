@@ -240,8 +240,8 @@ cp .env.docker.example .env
 docker-compose up -d
 
 # 3. Poblar con datos de ejemplo (opcional)
-docker-compose exec app npm run db:push
-docker-compose exec app tsx scripts/seed-drizzle.ts
+yarn db:push
+yarn db:generate
 
 # 4. Acceder a la aplicación
 # http://localhost:5000

@@ -296,7 +296,7 @@ docker-compose exec -T mysql mysql -u taskflow_user -p taskflow < backup-mysql.s
 ### Opción 2: Usar Script de Migración con Drizzle
 
 ```typescript
-// scripts/migrate-pg-to-mysql.ts
+// seed/migrate-pg-to-mysql.ts
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
 import { drizzle as mysqlDrizzle } from 'drizzle-orm/mysql2';
 import { Pool as PgPool } from 'pg';
@@ -375,8 +375,8 @@ docker-compose exec mysql mysql -u taskflow_user -p -e "SHOW TABLES;" taskflow
 - [ ] Editar `.env` con contraseñas seguras
 - [ ] Generar nuevas migraciones (`npm run db:generate`)
 - [ ] Levantar servicios (`docker-compose up -d`)
-- [ ] Aplicar migraciones (`docker-compose exec app npm run db:push`)
-- [ ] Ejecutar seed (`docker-compose exec app tsx scripts/seed-drizzle.ts`)
+- [ ] Aplicar migraciones (`yarn db:push`)
+- [ ] Ejecutar seed (`yarn db:generate`)
 - [ ] Probar la aplicación
 
 ---

@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { TaskWithDetails, ProjectWithCreator, User } from "@shared/schema";
 import { 
@@ -57,15 +58,37 @@ type PriorityValue = typeof PRIORITIES[number]["value"];
 const taskSchema = z.object({
   title: z.string().min(1, "El título es requerido").max(200),
   description: z.string().optional(),
-  status: z.enum(["pending", "in_progress", "done"]).optional(),
-  priority: z.enum(["low", "medium", "high"]).optional(),
   projectId: z.string().min(1, "El proyecto es requerido"),
   assignedToId: z.string().optional().nullable(),
+  priority: z.enum(["high", "medium", "low"]),
+  status: z.enum(["pending", "in_progress", "done"]).optional(),
 });
 
 type TaskForm = z.infer<typeof taskSchema>;
 
-function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: () => void }) {
+/**
+ * Helper: Check if user is creator or collaborator of a project
+ */
+function isCreatorOrCollaborator(project: ProjectWithCreator | undefined, userId: string): boolean {
+  if (!project) return false;
+  
+  // User is creator
+  if (project.creatorId === userId) return true;
+  
+  // User is collaborator
+  const isCollab = project.collaborators?.some(c => c.id === userId);
+  return !!isCollab;
+}
+
+function TaskFormDialog({ 
+  task, 
+  onClose, 
+  canEditAll 
+}: { 
+  task?: TaskWithDetails; 
+  onClose: () => void;
+  canEditAll: boolean;
+}) {
   const { toast } = useToast();
   const isEdit = !!task;
 
@@ -78,10 +101,10 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
     defaultValues: {
       title: task?.title || "",
       description: task?.description || "",
-      status: task?.status || "pending",
-      priority: task?.priority || "medium",
       projectId: task?.projectId || "",
       assignedToId: task?.assignedToId || null,
+      priority: task?.priority || "medium",
+      status: task?.status || "pending",
     },
   });
 
@@ -102,10 +125,30 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
   const mutation = useMutation({
     mutationFn: async (data: TaskForm) => {
       if (isEdit) {
-        // For edit, send all form fields including priority
-        return apiRequest("PATCH", `/api/tasks/${task.id}`, data);
+        // For edit, only send dirty (modified) fields
+        const dirtyFields = form.formState.dirtyFields;
+        const payload: Partial<TaskForm> = {};
+
+        (Object.keys(dirtyFields) as (keyof TaskForm)[]).forEach((key) => {
+          const value = data[key];
+
+          // Si no quieres mandar null al backend, lo ignoras o lo conviertes a undefined
+          if (value === null || value === undefined) {
+            return; // o pon payload[key] = undefined si tu API lo espera así
+          }
+
+          (payload as any)[key] = value;
+        });
+
+        
+        return apiRequest("PATCH", `/api/tasks/${task.id}`, payload);
       }
-      return apiRequest("POST", "/api/tasks", data);
+      // For create, set default status
+      const payload = {
+        ...data,
+        status: "pending",
+      };
+      return apiRequest("POST", "/api/tasks", payload);
     },
     onMutate: async (data) => {
       if (!isEdit) return; // Only optimistic update for edits
@@ -172,7 +215,12 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
               <FormItem>
                 <FormLabel>Título de la tarea</FormLabel>
                 <FormControl>
-                  <Input placeholder="Implementar nueva funcionalidad" data-testid="input-task-title" {...field} />
+                  <Input 
+                    placeholder="Implementar nueva funcionalidad" 
+                    data-testid="input-task-title" 
+                    disabled={!canEditAll}
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -190,6 +238,7 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
                     placeholder="Describe los detalles de la tarea..."
                     rows={3}
                     data-testid="input-task-description"
+                    disabled={!canEditAll}
                     {...field}
                   />
                 </FormControl>
@@ -205,14 +254,14 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Proyecto</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!canEditAll}>
                     <FormControl>
                       <SelectTrigger data-testid="select-project">
                         <SelectValue placeholder="Selecciona un proyecto" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {projects?.map((project, index) => (
+                      {projects?.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
                         </SelectItem>
@@ -226,25 +275,20 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
 
             <FormField
               control={form.control}
-              name="assignedToId"
+              name="priority"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Asignar a</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(value === "null" ? null : value)}
-                    value={field.value || undefined}
-                    disabled={!selectedProjectId}
-                  >
+                  <FormLabel>Prioridad</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!canEditAll}>
                     <FormControl>
-                      <SelectTrigger data-testid="select-assigned-to">
-                        <SelectValue placeholder={!selectedProjectId ? "Selecciona un proyecto primero" : "Sin asignar"} />
+                      <SelectTrigger data-testid="select-priority">
+                        <SelectValue placeholder="Selecciona prioridad" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="null">Sin asignar</SelectItem>
-                      {projectCollaborators?.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.username}
+                      {PRIORITIES.map((priority) => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          {priority.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -253,53 +297,67 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
                 </FormItem>
               )}
             />
+          </div>
 
+          {isEdit && (
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Estado</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isEdit}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-status">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="in_progress">En Progreso</SelectItem>
-                      <SelectItem value="done">Completada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prioridad</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger data-testid="select-priority">
-                        <SelectValue />
+                      <SelectTrigger data-testid="select-status">
+                        <SelectValue placeholder="Selecciona estado" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="low">Baja</SelectItem>
-                      <SelectItem value="medium">Media</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
+                      {STATUSES.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
+          )}
+
+          <FormField
+            control={form.control}
+            name="assignedToId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Asignar a</FormLabel>
+                <Select
+                  onValueChange={(value) => {
+                    const newValue = value === "null" ? null : value;
+                    form.setValue("assignedToId", newValue, { shouldDirty: true });
+                  }}
+                  value={field.value ?? "null"}
+                  disabled={!selectedProjectId}
+                >
+                  <FormControl>
+                    <SelectTrigger data-testid="select-assigned-to">
+                      <SelectValue placeholder={!selectedProjectId ? "Selecciona un proyecto primero" : "Sin asignar"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="null">Sin asignar</SelectItem>
+                    {canEditAll && projectCollaborators?.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
@@ -315,7 +373,19 @@ function TaskFormDialog({ task, onClose }: { task?: TaskWithDetails; onClose: ()
   );
 }
 
-function TaskCard({ task, isDragging, isMobile }: { task: TaskWithDetails; isDragging?: boolean; isMobile?: boolean }) {
+function TaskCard({ 
+  task, 
+  isDragging, 
+  isMobile,
+  canDelete,
+  canEditAll,
+}: { 
+  task: TaskWithDetails; 
+  isDragging?: boolean; 
+  isMobile?: boolean;
+  canDelete: boolean;
+  canEditAll: boolean;
+}) {
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -389,14 +459,16 @@ function TaskCard({ task, isDragging, isMobile }: { task: TaskWithDetails; isDra
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => deleteMutation.mutate()}
-                  className="text-destructive"
-                  data-testid={`button-delete-task-${task.id}`}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar
-                </DropdownMenuItem>
+                {canDelete && (
+                  <DropdownMenuItem
+                    onClick={() => deleteMutation.mutate()}
+                    className="text-destructive"
+                    data-testid={`button-delete-task-${task.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -474,7 +546,7 @@ function TaskCard({ task, isDragging, isMobile }: { task: TaskWithDetails; isDra
       </Card>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <TaskFormDialog task={task} onClose={() => setEditOpen(false)} />
+        <TaskFormDialog task={task} onClose={() => setEditOpen(false)} canEditAll={canEditAll} />
       </Dialog>
     </>
   );
@@ -488,6 +560,7 @@ export default function TasksPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [activeId, setActiveId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: tasks, isLoading } = useQuery<TaskWithDetails[]>({
     queryKey: ["/api/tasks"],
@@ -500,6 +573,25 @@ export default function TasksPage() {
   const { data: allCollaborators } = useQuery<User[]>({
     queryKey: ["/api/collaborators"],
   });
+
+  // ✅ Calculate task permissions for each task
+  const taskPermissions = React.useMemo(() => {
+    if (!tasks || !projects || !user) return new Map();
+    
+    const permissionsMap = new Map<string, { canDelete: boolean; canEditAll: boolean }>();
+    
+    tasks.forEach(task => {
+      const project = projects.find(p => p.id === task.projectId);
+      const canManage = isCreatorOrCollaborator(project, user.id);
+      
+      permissionsMap.set(task.id, {
+        canDelete: canManage,
+        canEditAll: canManage,
+      });
+    });
+    
+    return permissionsMap;
+  }, [tasks, projects, user]);
 
   // Filter tasks
   const filteredTasks = tasks?.filter((task) => {
@@ -618,7 +710,7 @@ export default function TasksPage() {
                 Nueva Tarea
               </Button>
             </DialogTrigger>
-            <TaskFormDialog onClose={() => setCreateOpen(false)} />
+            <TaskFormDialog onClose={() => setCreateOpen(false)} canEditAll={true} />
           </Dialog>
         </div>
 
@@ -724,6 +816,7 @@ export default function TasksPage() {
                     id={status.value}
                     status={status}
                     tasks={statusTasks}
+                    taskPermissions={taskPermissions}
                   />
                 );
               })}
@@ -731,9 +824,18 @@ export default function TasksPage() {
 
             {/* Mobile List View */}
             <div className="md:hidden space-y-3">
-              {filteredTasks?.map((task) => (
-                <TaskCard key={task.id} task={task} isMobile />
-              ))}
+              {filteredTasks?.map((task) => {
+                const permissions = taskPermissions.get(task.id) || { canDelete: false, canEditAll: false };
+                return (
+                  <TaskCard 
+                    key={task.id} 
+                    task={task} 
+                    isMobile 
+                    canDelete={permissions.canDelete}
+                    canEditAll={permissions.canEditAll}
+                  />
+                );
+              })}
             </div>
 
             {filteredTasks?.length === 0 && (
@@ -765,7 +867,14 @@ export default function TasksPage() {
 
       {/* Drag Overlay */}
       <DragOverlay>
-        {activeTask ? <TaskCard task={activeTask} isDragging /> : null}
+        {activeTask ? (
+          <TaskCard 
+            task={activeTask} 
+            isDragging 
+            canDelete={taskPermissions.get(activeTask.id)?.canDelete || false}
+            canEditAll={taskPermissions.get(activeTask.id)?.canEditAll || false}
+          />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );
@@ -776,10 +885,12 @@ function KanbanColumn({
   id,
   status,
   tasks,
+  taskPermissions,
 }: {
   id: string;
   status: typeof STATUSES[number];
   tasks: TaskWithDetails[];
+  taskPermissions: Map<string, { canDelete: boolean; canEditAll: boolean }>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -799,9 +910,17 @@ function KanbanColumn({
         data-testid={`dropzone-${id}`}
       >
         <div className="space-y-2">
-          {tasks.map((task) => (
-            <DraggableTask key={task.id} task={task} />
-          ))}
+          {tasks.map((task) => {
+            const permissions = taskPermissions.get(task.id) || { canDelete: false, canEditAll: false };
+            return (
+              <DraggableTask 
+                key={task.id} 
+                task={task} 
+                canDelete={permissions.canDelete}
+                canEditAll={permissions.canEditAll}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
@@ -809,7 +928,15 @@ function KanbanColumn({
 }
 
 // Draggable Task Component with drag handle
-function DraggableTask({ task }: { task: TaskWithDetails }) {
+function DraggableTask({ 
+  task, 
+  canDelete, 
+  canEditAll 
+}: { 
+  task: TaskWithDetails;
+  canDelete: boolean;
+  canEditAll: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
     data: {
@@ -835,7 +962,12 @@ function DraggableTask({ task }: { task: TaskWithDetails }) {
       </div>
       
       <div className={isDragging ? "opacity-50" : ""}>
-        <TaskCard task={task} isDragging={isDragging} />
+        <TaskCard 
+          task={task} 
+          isDragging={isDragging} 
+          canDelete={canDelete}
+          canEditAll={canEditAll}
+        />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = String(process.env.JWT_SECRET);
+const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) throw new Error("JWT_SECRET must be set");
 
@@ -20,7 +20,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET!) as { userId: string };
     req.userId = decoded.userId;
     next();
   } catch (error) {
@@ -29,5 +29,5 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
 }
 
 export function generateToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ userId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
 }

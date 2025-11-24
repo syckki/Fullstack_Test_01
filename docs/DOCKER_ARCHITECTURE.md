@@ -126,6 +126,9 @@ Cliente → [:80] frontend (Nginx)
 ```
 
 **Comando Docker Compose para escalar:**
+
+⚠️ Importante: Elimine las directivas container_name de los servicios backend y frontend en docker-compose.yml. 
+
 ```bash
 docker-compose -f docker-compose.yml up -d --scale frontend=3 --scale backend=3
 ```
