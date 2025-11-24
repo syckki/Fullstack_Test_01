@@ -174,7 +174,7 @@ shared/
 
 ### Frontend
 - **Framework**: React 18 con TypeScript
-- **Router**: Wouter (React Router alternativo)
+- **Router**: React Router (Wouter alternativo)
 - **Estado**: TanStack Query (React Query)
 - **Estilos**: TailwindCSS
 - **Componentes UI**: shadcn/ui
@@ -223,7 +223,7 @@ yarn db:generate
 yarn dev
 ```
 
-La aplicación estará disponible en `http://localhost:5000` por defecto
+La aplicación estará disponible en `http://localhost:3000` por defecto
 
 ## 🐳 Docker (Ejecución en Cualquier Plataforma)
 
@@ -244,12 +244,12 @@ yarn db:push
 yarn db:generate
 
 # 4. Acceder a la aplicación
-# http://localhost:5000
+# http://localhost:3000
 ```
 
 **Servicios incluidos:**
 - 🚀 **app**: Frontend + Backend (Node.js 20, Express, React)
-- 🗄️ **postgres**: MySQL 8 con persistencia de datos
+- 🗄️ **mysql**: MySQL 8 con persistencia de datos
 
 **Documentación completa**:
 - 📘 [`docs/DOCKER.md`](docs/DOCKER.md) - Guía completa de Docker
@@ -402,7 +402,7 @@ playwright.config.ts          # Configuración de Playwright
 ### Configuración
 
 El archivo `playwright.config.ts` incluye:
-- **Base URL**: `http://localhost:5000`
+- **Base URL**: `http://localhost:3000`
 - **Proyectos**: Desktop (Chrome) y Mobile (iPhone 12)
 - **Screenshots**: Solo en fallos
 - **Trace**: Solo en retry

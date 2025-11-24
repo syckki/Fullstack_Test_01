@@ -4,6 +4,7 @@ import {
   tasks,
   projectCollaborators,
   type User,
+  type ProjectUser,
   type InsertUser,
   type Project,
   type InsertProject,
@@ -26,7 +27,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  getAllUsers(): Promise<User[]>;
+  getAllUsers(): Promise<ProjectUser[]>;
 
   // Projects
   getProject(id: string): Promise<ProjectWithCreator | undefined>;
@@ -39,7 +40,7 @@ export interface IStorage {
   getCollaborator(id: string): Promise<ProjectCollaborator | undefined>;
   addCollaborator(projectId: string, userId: string): Promise<ProjectCollaborator>;
   removeCollaborator(projectId: string, userId: string): Promise<void>;
-  getProjectCollaborators(projectId: string): Promise<User[]>;
+  getProjectCollaborators(projectId: string): Promise<ProjectUser[]>;
   isUserCollaborator(projectId: string, userId: string): Promise<boolean>;
 
   // Tasks
@@ -66,7 +67,7 @@ export interface IStorage {
   getUserStats(userId: string): Promise<UserStats>;
 
   // Collaborators
-  getAllCollaboratorsForUser(userId: string): Promise<User[]>;
+  getAllCollaboratorsForUser(userId: string): Promise<ProjectUser[]>;
 }
 
 // Implementación MySQL del repositorio
@@ -96,13 +97,11 @@ export class DatabaseStorage implements IStorage {
     return (await this.getUser(result.id))!;
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<ProjectUser[]> {
     return db.select({
       id: users.id,
       username: users.username,
       email: users.email,
-      password: users.password,
-      createdAt: users.createdAt,
     }).from(users);
   }
 
@@ -281,14 +280,12 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async getProjectCollaborators(projectId: string): Promise<User[]> {
+  async getProjectCollaborators(projectId: string): Promise<ProjectUser[]> {
     const collaborators = await db
       .select({
         id: users.id,
         username: users.username,
         email: users.email,
-        password: users.password,
-        createdAt: users.createdAt,
       })
       .from(projectCollaborators)
       .innerJoin(users, eq(projectCollaborators.userId, users.id))
@@ -310,7 +307,7 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
-  async getAllCollaboratorsForUser(userId: string): Promise<User[]> {
+  async getAllCollaboratorsForUser(userId: string): Promise<ProjectUser[]> {
     // Get all projects user has access to (created or collaborated)
     const userProjects = await db
       .select({ 
@@ -338,8 +335,6 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         username: users.username,
         email: users.email,
-        password: users.password,
-        createdAt: users.createdAt,
       })
       .from(projectCollaborators)
       .innerJoin(users, eq(projectCollaborators.userId, users.id))
@@ -354,8 +349,6 @@ export class DatabaseStorage implements IStorage {
             id: users.id,
             username: users.username,
             email: users.email,
-            password: users.password,
-            createdAt: users.createdAt,
           })
           .from(users)
           .where(

@@ -118,6 +118,7 @@ export const updateTaskSchema = insertTaskSchema.partial();
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginUser = z.infer<typeof loginSchema>;
+export type ProjectUser = Pick<User, "id" | "username" | "email">
 
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;

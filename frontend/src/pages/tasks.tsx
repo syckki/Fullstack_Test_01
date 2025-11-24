@@ -132,10 +132,8 @@ function TaskFormDialog({
         (Object.keys(dirtyFields) as (keyof TaskForm)[]).forEach((key) => {
           const value = data[key];
 
-          // Si no quieres mandar null al backend, lo ignoras o lo conviertes a undefined
-          if (value === null || value === undefined) {
-            return; // o pon payload[key] = undefined si tu API lo espera así
-          }
+          // Omit only truly missing values; allow explicit null (e.g. to desasignar)
+          if (value === undefined) return;
 
           (payload as any)[key] = value;
         });

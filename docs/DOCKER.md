@@ -224,6 +224,7 @@ nc -zv mysql 3306
 # Cambiar puerto en docker-compose.yml
 ports:
   - "5000:3000"  # Exponer en 5000 en vez de 3000
+# Cambiar puerto en nginx.conf para el UPSTREAM BACKEND a 5000
 ```
 
 ### Base de datos vacía después de reiniciar
