@@ -1,0 +1,139 @@
+# =====================================================
+# Docker Compose - Arquitectura de 3 Capas Separadas
+# =====================================================
+# Esta configuración separa COMPLETAMENTE:
+#   1. frontend - Nginx sirviendo React build estático
+#   2. backend - Node.js API Express
+#   3. mysql - Base de datos MySQL
+#
+# Esta arquitectura es ideal para:
+#   - Escalado independiente de cada capa
+#   - Despliegue en clusters (Kubernetes)
+#   - Separación de responsabilidades
+#
+# Para ejecutar:
+#   docker-compose -f docker-compose.yml up -d
+# =====================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: taskflow-mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: taskflow
+      MYSQL_USER: taskflow_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    command: --default-authentication-plugin=mysql_native_password
+
+    networks:
+      - backend-network
+
+  # =====================================================
+  # Servicio 2: Backend API (Node.js + Express)
+  # =====================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: production
+    
+    container_name: taskflow-backend-3tier
+    restart: unless-stopped
+    
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      
+      # Database
+      DATABASE_URL: mysql://taskflow_user:${MYSQL_PASSWORD}@mysql:3306/taskflow
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+    
+    # Exponer solo a la red interna (no al host)
+    expose:
+      - "3000"
+    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - backend-network
+      - frontend-network
+
+  # =====================================================
+  # Servicio 3: Frontend (Nginx + React Static)
+  # =====================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+      target: production
+    
+    container_name: taskflow-frontend-3tier
+    restart: unless-stopped
+    
+    ports:
+      - "80:80"
+      # - "443:443" # (prod)
+    
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    networks:
+      - frontend-network
+
+# =====================================================
+# Volúmenes
+# =====================================================
+volumes:
+  mysql_data:
+    driver: local
+    name: taskflow-mysql-data-3tier
+
+# =====================================================
+# Redes
+# =====================================================
+networks:
+  # Red para comunicación backend <-> mysql
+  backend-network:
+    driver: bridge
+    name: taskflow-backend-network
+  
+  # Red para comunicación frontend <-> backend
+  frontend-network:
+    driver: bridge
+    name: taskflow-frontend-network

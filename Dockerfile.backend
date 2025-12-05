@@ -1,0 +1,38 @@
+# ==============================
+# Base: Node 22.21.1 + Yarn 4
+# ==============================
+FROM node:22.21.1-alpine AS production
+
+# Environment
+ENV NODE_ENV=production
+
+RUN apk add --no-cache curl
+
+# Working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY package.json yarn.lock .yarnrc.yml ./
+
+# Enable Corepack + Yarn 4
+RUN corepack enable && corepack prepare yarn@4.11.0 --activate
+
+# Install dependencies (uses node_modules according to .yarnrc.yml)
+RUN yarn install --immutable
+
+# Copy application code
+COPY . .
+
+# Build the application (frontend + backend according to your "build" script)
+RUN yarn build
+
+# Expose backend port
+EXPOSE 3000
+
+# (Optional) Change /health to an unauthenticated endpoint if needed
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); });"
+
+# Startup command
+# (Your package.json has: "start": "NODE_ENV=production node dist/index.js")
+CMD ["yarn", "start"]
